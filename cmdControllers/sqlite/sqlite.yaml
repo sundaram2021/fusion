@@ -1,0 +1,68 @@
+database: sqlite
+metadata:
+  name: my_sqlite_db  # Database instance name
+
+spec:
+  charset: "UTF8"  # Default character set for the database (SQLite uses UTF8 by default)
+  collation: ""  # Collation is not typically used in SQLite
+  engine: "SQLite"  # Database engine
+  
+  tables:
+    - name: "customers"
+      columns:
+        - name: "customer_id"
+          type: "INTEGER PRIMARY KEY AUTOINCREMENT"  # Auto-incrementing integer
+        - name: "name"
+          type: "TEXT"  # Use TEXT instead of VARCHAR
+          nullable: false
+        - name: "email"
+          type: "TEXT"  # Use TEXT instead of VARCHAR
+          nullable: false
+          unique: true
+        - name: "created_at"
+          type: "DATETIME DEFAULT CURRENT_TIMESTAMP"  # Use DATETIME with default value
+      indexes:
+        - name: "email_idx"
+          columns: ["email"]
+          unique: true
+      constraints:
+        - name: "email_format_check"
+          expression: "email LIKE '%_@__%.__%'"  # Simple email format validation using LIKE (SQLite doesn't support regex in constraints)
+      engine: "SQLite"  # Specific table-level storage engine (optional if default is already set)
+
+    - name: "orders"
+      columns:
+        - name: "order_id"
+          type: "INTEGER PRIMARY KEY AUTOINCREMENT"  # Auto-incrementing integer
+        - name: "customer_id"
+          type: "INTEGER"  # Use INTEGER for foreign key reference
+          nullable: false
+        - name: "order_date"
+          type: "DATETIME DEFAULT CURRENT_TIMESTAMP"  # Use DATETIME with default value
+        - name: "total_amount"
+          type: "REAL"  # Use REAL for decimal values in SQLite
+          nullable: false
+      foreign_keys:
+        - name: "fk_customer_order"
+          column: "customer_id"
+          references:
+            table: "customers"
+            column: "customer_id"
+          on_delete: "CASCADE"  # Foreign key action on delete
+          on_update: "CASCADE"  # Foreign key action on update
+      indexes:
+        - name: "customer_id_idx"
+          columns: ["customer_id"]
+          unique: false
+      engine: "SQLite"
+
+  partitions:
+    # SQLite does not support table partitioning natively like PostgreSQL.
+    # You may need to handle partitioning at the application level or use separate tables.
+  
+  options:
+    max_connections: 1  # Maximum allowed connections to the database (SQLite is file-based and typically single-threaded)
+    sql_mode: ""  # SQLite does not have a direct equivalent to MySQL's SQL modes; leave empty or specify as needed.
+    timezone: ""  # Timezone setting (not typically used in SQLite)
+    journal_mode: "WAL"  # Write-Ahead Logging mode (optional)
+    synchronous_mode: "NORMAL"  # Synchronous setting (optional)
