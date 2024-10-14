@@ -1,0 +1,63 @@
+database: mongodb
+metadata:
+  name: my_mongodb_db  # Database instance name
+
+spec:
+  engine: "MongoDB"  # Database engine
+  
+  collections:
+    - name: "customers"
+      documents:
+        - customer_id:  # MongoDB uses BSON format; no need for explicit types
+            type: "ObjectId"  # Automatically generated unique identifier
+        - name:
+            type: "String"  # Use String for text fields
+            required: true
+        - email:
+            type: "String"
+            required: true
+            unique: true
+        - created_at:
+            type: "Date"
+            default: "CURRENT_TIMESTAMP"  # Use Date with default value
+      indexes:
+        - name: "email_idx"
+          fields: ["email"]
+          unique: true
+      constraints:
+        - name: "email_format_check"
+          expression: "email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'"  # Email format validation using regex
+
+    - name: "orders"
+      documents:
+        - order_id:
+            type: "ObjectId"  # Automatically generated unique identifier
+        - customer_id:
+            type: "ObjectId"  # Reference to customers collection
+            required: true
+        - order_date:
+            type: "Date"
+            default: "CURRENT_TIMESTAMP"  # Use Date with default value
+        - total_amount:
+            type: "Decimal"  # Use Decimal for monetary values
+            required: true
+      foreign_keys:
+        - name: "fk_customer_order"
+          field: "customer_id"
+          references:
+            collection: "customers"
+            field: "customer_id"
+          on_delete: "CASCADE"  # Foreign key action on delete (handled at application level)
+          on_update: "CASCADE"  # Foreign key action on update (handled at application level)
+      indexes:
+        - name: "customer_id_idx"
+          fields: ["customer_id"]
+          unique: false
+
+  options:
+    max_connections: 100  # Maximum allowed connections to the database (MongoDB allows multiple connections)
+    replica_set_name: ""   # Name of the replica set if applicable (optional)
+    write_concern_level: "majority"  # Write concern level (optional)
+    read_concern_level: "local"       # Read concern level (optional)
+    auth_enabled: false                # Authentication setting (optional)
+    ssl_enabled: false                 # SSL setting (optional)
