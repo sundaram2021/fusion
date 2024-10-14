@@ -1,0 +1,76 @@
+database: postgresql
+metadata:
+  name: my_postgresql_db  # Database instance name
+
+spec:
+  charset: "UTF8"  # Default character set for the database (PostgreSQL uses UTF8 by default)
+  collation: "en_US.UTF-8"  # Default collation for the database
+  engine: "PostgreSQL"  # Database engine
+  
+  tables:
+    - name: "customers"
+      columns:
+        - name: "customer_id"
+          type: "SERIAL"  # Auto-incrementing integer
+          primary_key: true
+        - name: "name"
+          type: "VARCHAR(100)"
+          nullable: false
+        - name: "email"
+          type: "VARCHAR(100)"
+          nullable: false
+          unique: true
+        - name: "created_at"
+          type: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"  # Use TIMESTAMP with default value
+      indexes:
+        - name: "email_idx"
+          columns: ["email"]
+          unique: true
+      constraints:
+        - name: "email_format_check"
+          expression: "email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'"  # Email format validation using regex
+      engine: "PostgreSQL"  # Specific table-level storage engine (optional if default is already set)
+
+    - name: "orders"
+      columns:
+        - name: "order_id"
+          type: "SERIAL"  # Auto-incrementing integer
+          primary_key: true
+        - name: "customer_id"
+          type: "INT"
+          nullable: false
+        - name: "order_date"
+          type: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"  # Use TIMESTAMP with default value
+        - name: "total_amount"
+          type: "DECIMAL(10, 2)"
+          nullable: false
+      foreign_keys:
+        - name: "fk_customer_order"
+          column: "customer_id"
+          references:
+            table: "customers"
+            column: "customer_id"
+          on_delete: "CASCADE"  # Foreign key action on delete
+          on_update: "CASCADE"  # Foreign key action on update
+      indexes:
+        - name: "customer_id_idx"
+          columns: ["customer_id"]
+          unique: false
+      engine: "PostgreSQL"
+
+  partitions:
+    - table: "orders"
+      type: "RANGE"  # Partitioning type (RANGE, LIST, etc.)
+      columns:
+        - order_date
+      ranges:
+        - range: "[2024-01-01,2024-04-01)"  # PostgreSQL uses inclusive/exclusive ranges for partitioning
+          partition_name: "p_2024_q1"
+        - range: "[2024-04-01,2024-07-01)"
+          partition_name: "p_2024_q2"
+
+  options:
+    max_connections: 100  # Maximum allowed connections to the database
+    sql_mode: ""  # PostgreSQL does not have a direct equivalent to MySQL's SQL modes; leave empty or specify as needed.
+    timezone: "UTC"  # Set the timezone for the database (optional)
+    default_transaction_isolation_level : 'READ COMMITTED' # Default transaction isolation level (optional)
